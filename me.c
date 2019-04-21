@@ -109,7 +109,7 @@ char *prompt(char *msg, void (*callback)(char *, int));
 
 void clear_screen()
 {
-    write(STDOUT_FILENO, "\x1b[2J", 4);
+    write(STDOUT_FILENO, "\e[1;1H\e[2J", 12);
 }
 
 void panic(const char *s)
@@ -929,7 +929,14 @@ char *prompt(char *msg, void (*callback)(char *, int))
                 callback(buf, c);
             free(buf);
             return NULL;
-        } else if (c == '\r') {
+        } else if (c == CTRL_('y')) {
+            set_status_message("");
+            save_file();
+            if (callback)
+                callback(buf, c);
+            return buf;
+        }
+        else if (c == '\r') {
             if (buf_len != 0) {
                 set_status_message("");
                 if (callback)
@@ -997,8 +1004,8 @@ void process_key()
         break;
     case CTRL_('q'):
         if (ec.modified &&
-            !prompt("File has been modified. Type 'yes' and enter "
-                    "to force quit (ESC to cancel)",
+            !prompt("File has been modified. Type 'CTRL + y' to save"
+                    "or anykey to quit w/o saving.",
                     NULL))
             return;
         clear_screen();
